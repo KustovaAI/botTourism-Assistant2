@@ -1,5 +1,6 @@
 import requests
 import telebot
+import json
 from telebot import types
 # Создаем экземпляр бота
 # Название бота в телеграмме: @botTourismAssistant
@@ -49,11 +50,36 @@ def handle_text(message):
     elif message.text.strip() == 'Кафе':
         # Потом переедет в отдельный файл
         params = dict(q='кафе', sort_point=str(coord.longitude)+','+str(coord.latitude), key='ruimey3930')
-        req = requests.get(url, params=params)
-        page = req.text
-        print(page)
+        str1 = str('https://catalog.api.2gis.com/3.0/items?q=кафе&sort_point='+str(coord.longitude)+','+str(coord.latitude)+'&key=ruimey3930')
+        req = requests.get(str1)
+        print(req.text)
+        listResult = parseResponse(req.text, message.chat.id)
+
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Поиск мест")
+        item2 = types.KeyboardButton("Поиск билетов")
+        markup.add(item1)
+        markup.add(item2)
+        bot.send_message(message.chat.id, 'Выберите, что хотите посмотреть', reply_markup=markup)
 
 
+def parseResponse(text, id):
+    dic = json.loads(text)
+    items = []
+    o = dic.get('result')
+    for i in o.get('items'):
+        l = dict(i)
+        u=tuple()
+        strName = l['name']
+        strLink=None
+        try:
+            strLink = l['ads']['link']['value']
+        except:
+            strLink = "There is no link"
+        u = {strName, strLink}
+        items.append(u)
+        bot.send_message(id, strName+': ' + strLink)
+    return items
 
 # Запускаем бота
 bot.polling(none_stop=True, interval=0)
